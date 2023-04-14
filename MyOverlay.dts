@@ -1,0 +1,115 @@
+// Definitions for ADAU1977 ADC
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708","brcm,bcm2835";
+    
+	fragment@0 {
+        	target = <&i2c>;
+        	
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			
+			pcm1864: pcm1864@4a {
+                        	compatible = "ti,pcm1864";
+					#sound-dai-cells = <0>;
+                        	reg = <0x4a>;
+                        	avdd-supply = <&reg_3v3_analog>;
+            			dvdd-supply = <&reg_3v3>;
+            			iovdd-supply = <&reg_3v3>;
+
+					clocks = <&clocks BCM2835_CLOCK_GP0>;
+                			clock-names = "mclk";
+                			assigned-clocks = <&clocks BCM2835_CLOCK_GP0>;
+                			assigned-clock-rates = <9600000>;
+
+					pinctrl-names = "default";
+                			pinctrl-0 = <&gpclk0_pin>;
+                	};
+        	};
+	};
+
+	fragment@0 {
+        target = <&sound>;
+        snd: __overlay__ {
+            compatible = "simple-audio-card";
+            simple-audio-card,name = "Dual";
+
+            status="okay";
+
+            capture_link: simple-audio-card,dai-link@0 {
+                format = "i2s";
+		    bitclock-master = <&r_codec_dai>;
+		    frame-master = <&r_codec_dai>;
+
+                r_cpu_dai: cpu {
+                    sound-dai = <&i2s>;
+                    dai-tdm-slot-num = <4>;
+                    dai-tdm-slot-width = <32>;
+                };
+
+                r_codec_dai: codec {
+                    sound-dai = <&codec_in>;
+                };
+            };
+
+            playback_link: simple-audio-card,dai-link@1 {
+                format = "i2s";
+		    bitclock-master = <&p_codec_dai>;
+		    frame-master = <&p_codec_dai>;
+
+                p_cpu_dai: cpu {
+                    sound-dai = <&i2s>;
+                    dai-tdm-slot-num = <2>;
+                    dai-tdm-slot-width = <32>;
+
+                };
+
+                p_codec_dai: codec {
+                    sound-dai = <&codec_out>;
+                };
+            };
+        };
+    };
+
+    fragment@1 {
+        target-path = "/";
+        __overlay__ {
+            codec_out: spdif-transmitter {
+                #address-cells = <0>;
+                #size-cells = <0>;
+                #sound-dai-cells = <0>;
+                compatible = "ti,5102a";
+                status = "okay";
+            };
+            codec_in: spdif-receiver {
+                #address-cells = <0>;
+                #size-cells = <0>;
+                #sound-dai-cells = <0>;
+                compatible = "ti,pcm1864";
+                status = "okay";
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&i2s>;
+        __overlay__ {
+            #sound-dai-cells = <0>;
+            status = "okay";
+        };
+  
+	};
+
+    fragment@3 {
+        target = <&gpio>;
+        __overlay__ {
+            gpclk0_pin: gpclk0_pin {
+                brcm,pins = <4>;
+                brcm,function = <4>;
+            };
+    };
+};
